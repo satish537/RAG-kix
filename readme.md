@@ -6,7 +6,6 @@ install required packages:
 * langchain
 * fastapi
 * aiofiles
-* llamaindex
 
 
 # install ollama
@@ -19,13 +18,6 @@ create 2 empty directories at the root level
 ```
 data
 chroma
-```
-
-create 2 empty directories in the chroma directory
-```
-confluence
-langchain
-llamaindex
 ```
 
 
