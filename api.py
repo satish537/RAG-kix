@@ -48,7 +48,7 @@ async def generate_theme(projectId: str = Form(...), prompt: str = Form(...)):
     try:
     
         response = await generate_theme_details(projectId, prompt)
-        print(response)
+
         return JSONResponse(
             content=response,
             status_code=status.HTTP_200_OK
