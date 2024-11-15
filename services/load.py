@@ -2,7 +2,8 @@ import os, docx2txt
 from langchain_community.document_loaders import TextLoader, Docx2txtLoader, PyPDFLoader, UnstructuredExcelLoader, JSONLoader
 from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.schema.document import Document
+# from langchain.schema.document import Document
+from langchain_core.documents import Document
 from services.embedding import get_embedding_function
 from langchain_community.vectorstores import Chroma
 from fastapi import HTTPException, status
@@ -50,7 +51,7 @@ async def split_documents(documents: list[Document], id, projectId, videoType):
 
     for doc in split_docs:
         doc.metadata["id"] = id
-        doc.metadata["projectId"] = projectId
+        doc.metadata["projectId"] = str(projectId)
         doc.metadata["videoType"] = videoType
 
     return split_docs

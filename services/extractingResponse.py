@@ -11,6 +11,9 @@ Supporting texts:
 """
 
 async def extract_single_input(response):
+    # Clean the response to remove any trailing backslashes and extra spaces
+    response = response.replace("\\", " ")
+
     # Extract Theme (between "Theme:" and "Description:")
     theme_match = re.search(r"Theme:\s*(.+?)\s*Description:", response, re.DOTALL)
     theme = theme_match.group(1).strip() if theme_match else None
@@ -35,6 +38,39 @@ async def extract_single_input(response):
         "supporting texts": supporting_texts
     }
 
+
 # Extract and print the result
 extracted_data = extract_single_input(response)
 print(extracted_data)
+
+
+
+
+
+
+# Back-up
+
+# async def extract_single_input(response):
+#     # Extract Theme (between "Theme:" and "Description:")
+#     theme_match = re.search(r"Theme:\s*(.+?)\s*Description:", response, re.DOTALL)
+#     theme = theme_match.group(1).strip() if theme_match else None
+
+#     # Extract Description
+#     description_match = re.search(r"Description:\s*(.+?)\s*Supporting texts:", response, re.DOTALL)
+#     description = description_match.group(1).strip() if description_match else None
+
+#     # Extract Supporting Texts
+#     supporting_texts_match = re.search(r"Supporting texts:\s*((?:- .+\n?)+)", response)
+#     if supporting_texts_match:
+#         supporting_texts = [
+#             text.strip('- ').strip('"') for text in supporting_texts_match.group(1).split('\n') if text.strip()
+#         ]
+#     else:
+#         supporting_texts = []
+
+#     # Combine into dictionary
+#     return {
+#         "theme": theme,
+#         "description": description,
+#         "supporting texts": supporting_texts
+#     }
