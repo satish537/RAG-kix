@@ -38,13 +38,14 @@ async def generate_theme_details(projectID: str, prompt: str):
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=get_embedding_function())
 
     results = db.similarity_search_with_score(prompt, k=4, filter={"projectId": projectID})
+    if not results:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"projectId '{projectID}' does not have any matching data")
+
     context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-    
     prompt_template = ChatPromptTemplate.from_template(CORE_PROMPT)
     final_prompt = prompt_template.format(userPrompt=prompt, context=context_text)
 
     response_text = ollamaModel.invoke(final_prompt)
-    print(response_text)
     language_code, language_name = language_detaction(response_text)
     response_obj = await extract_single_input(response_text)
 
