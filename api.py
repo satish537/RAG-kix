@@ -13,11 +13,11 @@ DATA_PATH = "data"
 
 
 @app.post("/upload-transcript", tags=["Main"])
-async def load_file(id: str = Form(...), projectId: str = Form(...), file: UploadFile = File(...), videoType: str = Form(...)):
+async def load_file(id: str = Form(...), projectId: str = Form(...), questionId: str = Form(None), participantId: str = Form(None), file: UploadFile = File(...), videoType: str = Form(...)):
     try:
 
         fullpath, filename = await rename_and_save_file(file)
-        response = await load_database(id, projectId, filename, videoType)
+        response = await load_database(id, projectId, questionId, participantId, filename, videoType)
 
         return JSONResponse(
             content="File Upload Successfully",
@@ -46,11 +46,11 @@ async def load_file(id: str = Form(...), projectId: str = Form(...), file: Uploa
 
 
 @app.post("/generate-theme", tags=["Main"])
-async def generate_theme(projectId: str = Form(...), prompt: str = Form(...)):
+async def generate_theme(projectId: str = Form(...), prompt: str = Form(...), questionId: str = Form(None), participantId: str = Form(None)):
 
     try:
     
-        response = await generate_theme_details(projectId, prompt)
+        response = await generate_theme_details(projectId, prompt, questionId, participantId)
 
         return JSONResponse(
             content=response,

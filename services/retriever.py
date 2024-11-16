@@ -30,14 +30,18 @@ TRANSCRIPT:
 """
 
 
-async def generate_theme_details(projectID: str, prompt: str):
+async def generate_theme_details(projectID: str, prompt: str, questionId, participantId):
 
     if not os.path.exists(CHROMA_PATH):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Project_id '{projectID}' Not Found")
 
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=get_embedding_function())
 
-    results = db.similarity_search_with_score(prompt, k=4, filter={"projectId": projectID})
+    if questionId and participantId:
+        results = db.similarity_search_with_score(prompt, k=4, filter={"$and": [{"questionId": questionId}, {"participantId": participantId}]})
+    else:
+        results = db.similarity_search_with_score(prompt, k=4, filter={"projectId": projectID})
+    print(results)
     if not results:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"projectId '{projectID}' does not have any matching data")
 

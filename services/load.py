@@ -14,10 +14,10 @@ DATA_PATH = "./data"
 CHROMA_PATH = "./chroma/vectorDB"
 
 
-async def load_database(id, projectId, filename, videoType):
+async def load_database(id, projectId, questionId, participantId, filename, videoType):
 
     document_list = await load_documents(DATA_PATH, filename)
-    chunk_list = await split_documents(document_list, id, projectId, videoType)
+    chunk_list = await split_documents(document_list, id, projectId, questionId, participantId, videoType)
     response = await add_to_db(chunk_list, projectId, DATA_PATH, filename)
 
     return response
@@ -40,7 +40,7 @@ async def load_documents(data_path, filename):
 
 
 # Function to split documents into smaller chunks
-async def split_documents(documents: list[Document], id, projectId, videoType):
+async def split_documents(documents: list[Document], id, projectId, questionId, participantId, videoType):
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=2000,
         chunk_overlap=500,
@@ -51,7 +51,10 @@ async def split_documents(documents: list[Document], id, projectId, videoType):
 
     for doc in split_docs:
         doc.metadata["id"] = id
-        doc.metadata["projectId"] = str(projectId)
+        doc.metadata["projectId"] = projectId
+        if questionId and participantId:
+            doc.metadata["questionId"] = questionId
+            doc.metadata["participantId"] = participantId
         doc.metadata["videoType"] = videoType
 
     return split_docs
