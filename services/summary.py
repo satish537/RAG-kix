@@ -38,7 +38,7 @@ async def generate_summary(id: str):
 
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=get_embedding_function())
 
-    results = db.similarity_search_with_score(CORE_PROMPT, k=10, filter={"id": id})
+    results = db.similarity_search_with_score(CORE_PROMPT, k=10, filter={"questionId": id})
     if not results:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID '{id}' does not have any matching data")
 
