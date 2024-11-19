@@ -1,6 +1,5 @@
 import re
 
-
 async def extract_single_input(response):
     # Clean the response to remove any trailing backslashes and extra spaces
     response = response.replace("\\", " ")
@@ -19,6 +18,7 @@ async def extract_single_input(response):
         supporting_texts = [
             text.strip('- ').strip('"') for text in supporting_texts_match.group(1).split('\n') if text.strip()
         ]
+        supporting_texts = [re.sub(r"[,.]", "", point) for point in supporting_texts]    
     else:
         supporting_texts = []
 
@@ -29,6 +29,29 @@ async def extract_single_input(response):
         "supporting texts": supporting_texts
     }
 
+async def extract_points_from_regenerated_res(input_string):
+    pattern = r'(?:-\s*|\d+\.\s*)"(.*?)"'
+    matches = re.findall(pattern, input_string)
+
+    # Clean the points
+    cleaned_points = []
+    for point in matches:
+        point = re.sub(r"[,.0-9]", "", point)
+        point = re.sub(r"\s*\([^)]*\)$", "", point)
+        cleaned_points.append(point.strip())
+
+    return cleaned_points
+
+async def get_matching_strings(paragraph, string_list):
+    matching_strings = []
+    for string in string_list:
+        # Create a regex pattern to match the whole word
+        pattern = r'\b' + re.escape(string) + r'\b'
+        # Check if the word is in the paragraph
+        if re.search(pattern, paragraph, re.IGNORECASE):  # Case-insensitive match
+            matching_strings.append(string)
+
+    return matching_strings
 
 
 async def extract_points_from_text(response: str) -> list:
@@ -72,6 +95,9 @@ async def extract_points_from_text(response: str) -> list:
 # Back-up
 
 # async def extract_single_input(response):
+#     # Clean the response to remove any trailing backslashes and extra spaces
+#     response = response.replace("\\", " ")
+
 #     # Extract Theme (between "Theme:" and "Description:")
 #     theme_match = re.search(r"Theme:\s*(.+?)\s*Description:", response, re.DOTALL)
 #     theme = theme_match.group(1).strip() if theme_match else None
