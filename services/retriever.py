@@ -77,6 +77,8 @@ async def verify_supporting_text(response_obj: dict, context: str, question: str
 
     if len(supporting_texts_list) < 3:
         supporting_texts_list = matching_text
+    
+    supporting_texts_list = list(set(supporting_texts_list))
 
     return supporting_texts_list
 

@@ -3,6 +3,7 @@ from fastapi import FastAPI, UploadFile, File, Query, HTTPException, Form, statu
 from services.load import load_database
 from services.retriever import generate_theme_details
 from services.summary import generate_summary
+from services.file_to_query import text_to_query
 from utilservice import *
 
 
@@ -73,8 +74,6 @@ async def generate_theme(projectId: str = Form(...), prompt: str = Form(...), qu
 
 
 
-
-
 @app.post("/generate-homework-summary", tags=["Main"])
 async def generate_homework_summary(id: str = Form(...)):
 
@@ -100,6 +99,39 @@ async def generate_homework_summary(id: str = Form(...)):
             content=f"Internal server error: {str(e)}",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+
+@app.post("/file-to-query", tags=["Main"])
+async def load_file(file: UploadFile = File(...), question: str = Form(...)):
+    try:
+
+        fullpath, filename = await rename_and_save_file(file)
+        response = await text_to_query(filename, question)
+
+        return JSONResponse(
+            content=response,
+            status_code=status.HTTP_201_CREATED
+        )
+
+    except HTTPException as http_exc:
+        return JSONResponse(
+            content=http_exc.detail,
+            status_code=http_exc.status_code
+        )
+
+    except Exception as e:
+        print(e)
+
+        return JSONResponse(
+            content=f"Internal server error: {str(e)}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+    finally:
+        file_path = os.path.join(DATA_PATH, file.filename)
+        if os.path.isfile(file_path):
+            delete_document(DATA_PATH, file.filename)
 
 
 
