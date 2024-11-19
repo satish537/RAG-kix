@@ -14,16 +14,16 @@ ollamaModel = Ollama(model="mistral", keep_alive=-1)
 
 REGENERATE_PROMPT = """
 
-TITLE: {themeTitle}
+QUESTION: {userQuestion}
 
-Based on the provided theme title, extract supportive text from the transcript that aligns with the theme. 
+Based on the provided question, extract supportive text from the transcript that aligns with the question.
 
 Extract Supportive Text:
-- Identify and quote specific sentences or phrases from the transcript that directly support the provided theme.
+- Identify and quote specific sentences or phrases from the transcript that directly answer or support the provided question.
 - Do not modify, paraphrase, or correct the text in any way. **Do not add commas or make grammatical corrections.**
 - Include all grammatical errors, informal language, and typos as they appear in the original transcript.
 - Verify Verbatim Text: Ensure the provided supportive text matches the transcript exactly, word-for-word. If the supportive text does not match verbatim, the response is invalid.
-- Give minimum 3-5 points.
+- Provide a minimum of 3-5 points.
 
 Supporting texts: - [exact matching text block from the transcript, ensuring it includes a point from the same context/transcript]- [exact matching text block from the transcript, ensuring it includes a point from the same context/transcript]- [exact matching text block from the transcript, ensuring it includes a point from the same context/transcript]
 
@@ -36,47 +36,39 @@ TRANSCRIPT:
 """
 
 CORE_PROMPT = """
-
+ 
 QUESTION: {userPrompt}
-
-You are tasked with analyzing a provided transcript and a related question. Your objectives are as follows:
-
-Identify the Theme: Based on the question provided, extract and create a clear theme that encapsulates the essence of the question in relation to the transcript.
-
-Provide a Description: Write a concise description (1-3 sentences) for the identified theme, explaining its relevance and context within the framework of the question and transcript.
-
-Extract Supportive Text:
-
-Identify and quote specific sentences or phrases from the transcript that directly support the theme.
-Do not modify, paraphrase, or correct the text in any way. Don't add comma in text.
-Include all grammatical errors, informal language, and typos as they appear in the original transcript.
-Verify Verbatim Text: Ensure the provided supportive text matches the transcript exactly, word-for-word. If the supportive text does not match verbatim, the response is invalid.
-
+ 
+Identify a theme from the provided transcript and describe it concisely in 1-3 sentences.
+Additionally, explain the rationale behind the title of the theme, ensuring to include exact phrases or sentences from the transcript that directly influenced your decision.When citing supporting text, please provide word-for-word excerpts from the transcript to substantiate your theme identification.
+Generate supportive text that strictly matches the provided transcript.Ensure that every line corresponds 100% with the transcript without any grammatical mistakes.Do not include ellipses (...) or any additional text within parentheses or braces.The output must consist solely of lines that directly match the transcript, maintaining a perfect alignment with the original content.
+ 
 Theme: [title of theme]\\Description: [description of theme]\\Supporting texts: - [exact matching text block from the transcript, ensuring it includes a point from the same context/transcript]- [exact matching text block from the transcript, ensuring it includes a point from the same context/transcript]- [exact matching text block from the transcript, ensuring it includes a point from the same context/transcript]
  
 ===========================================================================================================================================
-
+ 
 TRANSCRIPT:
 {context}
-
+ 
 """
 
-async def regenerate_supporting_text(context_text: str, theme: str):
+async def regenerate_supporting_text(context_text: str, question: str):
     prompt_template = ChatPromptTemplate.from_template(REGENERATE_PROMPT)
-    final_prompt = prompt_template.format(themeTitle=theme, context=context_text)
+    final_prompt = prompt_template.format(userQuestion=question, context=context_text)
+    print(final_prompt)
 
     response_text = ollamaModel.invoke(final_prompt)
 
     return response_text
 
-async def verify_supporting_text(response_obj: dict, context: str):
+async def verify_supporting_text(response_obj: dict, context: str, question: str):
     supporting_texts_list = await get_matching_strings(context, response_obj['supporting texts'])
     matching_text = supporting_texts_list
 
     attempts = 0
     while len(supporting_texts_list) < 3 and attempts < 3:
         print("attempts", attempts)
-        response = await regenerate_supporting_text(context, response_obj['theme'])
+        response = await regenerate_supporting_text(context, question)
         supporting_texts_list = await extract_points_from_regenerated_res(response)
 
         supporting_texts_list = await get_matching_strings(context, supporting_texts_list)
@@ -112,7 +104,7 @@ async def generate_theme_details(projectID: str, prompt: str, questionId, partic
     language_code, language_name = language_detaction(response_text)
     response_obj = await extract_single_input(response_text)
 
-    supporting_text = await verify_supporting_text(response_obj, context_text)
+    supporting_text = await verify_supporting_text(response_obj, context_text, prompt)
     response_obj["supporting texts"] = supporting_text
 
     if not response_obj["theme"] or not response_obj["description"]:
