@@ -100,6 +100,7 @@ async def generate_themeDescription_text(prompt: str, supporting_text_list: str)
         prompt_template = ChatPromptTemplate.from_template(TITLE_AND_DESCRIPTION_PROMPT)
         final_prompt = prompt_template.format(question=prompt, supporting_text=supporting_text_list)
         response_text = ollamaModel.invoke(final_prompt)
+        print(response_text)
         respontheme, answerse_text = await extract_theme_and_answer(response_text)
 
         if respontheme and answerse_text:
