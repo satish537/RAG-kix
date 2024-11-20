@@ -1,4 +1,4 @@
-import os, time
+import os, time, re
 from utilservice import *
 from fastapi import status, HTTPException
 from fastapi.responses import JSONResponse
@@ -6,7 +6,7 @@ from langchain_community.llms.ollama import Ollama
 from langchain_community.vectorstores import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 from services.embedding import get_embedding_function
-from services.extractingResponse import extract_single_input, get_matching_strings, extract_points_from_regenerated_res
+from services.extractingResponse import get_matching_strings
 
 CHROMA_PATH = "./chroma/vectorDB"
 ollamaModel = Ollama(model="llama3.1", keep_alive=-1)
@@ -69,7 +69,7 @@ async def generate_supporting_text(prompt: str, context_text: str):
         prompt_template = ChatPromptTemplate.from_template(SUPPORTING_TEXT_PROMPT)
         final_prompt = prompt_template.format(question=prompt, context=context_text)
         response_text = ollamaModel.invoke(final_prompt)
-
+        print(response_text)
         supporting_text_list = await extract_clean_points(response_text)
         supporting_text_list = await get_matching_strings(context_text, supporting_text_list)
         aggregated_points.extend(supporting_text_list)
@@ -106,8 +106,6 @@ async def generate_themeDescription_text(prompt: str, supporting_text_list: str)
             break
 
     return respontheme, answerse_text
-
-
 
 
 
@@ -150,8 +148,6 @@ async def generate_theme_details(projectID: str, prompt: str, questionId, partic
 
 
 
-import re
-
 async def extract_clean_points(text):
     # Regex to match points starting with *, ., -, or numbers (with or without a period or parenthesis after the number)
     regex = r"(?:(?:[-*.\s]*\d*[.)]?\s*)|(?:[*.\-]\s*))(.*)"
@@ -170,7 +166,13 @@ async def extract_theme_and_answer(response_text):
     answer_pattern = r"\*\*Answer:\*\*\s*(.+)"
 
     theme_match = re.search(theme_pattern, response_text)
-    theme_title = theme_match.group(1).strip() if theme_match else None
+    if theme_match:
+        theme_title = theme_match.group(1).strip()
+        # Remove inverted commas if present
+        if theme_title.startswith('"') and theme_title.endswith('"'):
+            theme_title = theme_title[1:-1]
+    else:
+        theme_title = None
 
     answer_match = re.search(answer_pattern, response_text)
     answer = answer_match.group(1).strip() if answer_match else None

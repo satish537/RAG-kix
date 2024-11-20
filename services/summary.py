@@ -14,18 +14,19 @@ ollamaModel = Ollama(model="mistral", keep_alive=-1)
 
 CORE_PROMPT = """
  
-You are an AI summarization tool. Your task is to extract the major points from the provided transcript. Please follow these guidelines:  
+You are an AI summarization tool. Your task is to extract the major points from the provided transcript. Please follow these guidelines:
 
-1. Read the entire transcript carefully.  
-2. Identify and focus on the key ideas, arguments, and conclusions presented.  
-3. Summarize the content in a point-wise format.  
-4. Each point should be concise and only include the most significant information.  
-5. Separate each point with a newline character "\n".  
-6. Avoid any unnecessary details, examples, or explanations; stick to the major points only.  
+Read the entire transcript carefully.
+Identify and focus on the key ideas, arguments, and conclusions presented.
+Summarize the content in a point-wise format.
+Ensure each point is objective, concise, and focuses on the most significant information.
+Each point should represent a general overview of the content and context, avoiding conversational tones or references to specific individuals (e.g., "you," "they," "he," "she").
+Separate each point with a newline character "\n".
+Avoid any unnecessary details, examples, or explanations; summarize only the major points and overarching themes.
  
 ===========================================================================================================================================
 
-TRANSCRIPT:
+CONTEXT:
 {context}
 
 """
@@ -46,9 +47,18 @@ async def generate_summary(id: str):
     prompt_template = ChatPromptTemplate.from_template(CORE_PROMPT)
     final_prompt = prompt_template.format(userPrompt=CORE_PROMPT, context=context_text)
 
-    response_text = ollamaModel.invoke(final_prompt)
-    language_code, language_name = language_detaction(response_text)
-    response_obj = await extract_points_from_text(response_text)
+    response_obj = []
+    attempt = 0
+    while not response_obj and attempt < 3:
+        print(f"Attempt {attempt}...for summary")
+        response_text = ollamaModel.invoke(final_prompt)
+        print(response_text)
+        response_obj = await extract_clean_key_points(response_text)
+
+        attempt += 1
+
+
+    language_code, language_name = language_detaction(str(response_obj))
 
     response_obj = {
         'data': response_obj,
@@ -56,4 +66,15 @@ async def generate_summary(id: str):
     }
 
     return response_obj
+
+
+
+async def extract_clean_key_points(text):
+    # Define a regex pattern to match points starting with keymarks (numbers, dashes, asterisks)
+    pattern = r"^(?:\d+\.\s*|-{1,2}\s*|\*\s*)(.*)"
+    # Use re.findall with the multiline flag to extract the text without keymarks
+    points = re.findall(pattern, text, flags=re.MULTILINE)
+    # Strip whitespace from each extracted point
+    points = [point.strip() for point in points]
+    return points
 
