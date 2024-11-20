@@ -21,7 +21,7 @@ Identify and focus on the key ideas, arguments, and conclusions presented.
 Summarize the content in a point-wise format.
 Ensure each point is objective, concise, and focuses on the most significant information.
 Each point should represent a general overview of the content and context, avoiding conversational tones or references to specific individuals (e.g., "you," "they," "he," "she").
-Separate each point with a newline character "\n".
+Separate each point with a newline character("\n") and index numbers.
 Avoid any unnecessary details, examples, or explanations; summarize only the major points and overarching themes.
  
 ===========================================================================================================================================
