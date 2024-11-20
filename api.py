@@ -1,7 +1,8 @@
 from fastapi.responses import JSONResponse
 from fastapi import FastAPI, UploadFile, File, Query, HTTPException, Form, status, BackgroundTasks, Body
 from services.load import load_database
-from services.retriever import generate_theme_details
+# from services.retriever import generate_theme_details
+from services.retriever2 import generate_theme_details
 from services.summary import generate_summary
 from services.file_to_query import text_to_query
 from utilservice import *
