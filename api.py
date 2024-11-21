@@ -4,7 +4,8 @@ from services.load import load_database
 # from services.retriever import generate_theme_details
 from services.retriever2 import generate_theme_details
 from services.summary import generate_summary
-from services.file_to_query import text_to_query
+from services.fileQuery import text_to_query
+from services.chatPrompt import retriveWithPrompt
 from utilservice import *
 
 
@@ -133,6 +134,34 @@ async def load_file(file: UploadFile = File(...), question: str = Form(...)):
         file_path = os.path.join(DATA_PATH, file.filename)
         if os.path.isfile(file_path):
             delete_document(DATA_PATH, file.filename)
+
+
+
+@app.post("/chat-with-prompt", tags=["Main"])
+async def generate_theme(projectId: str = Form(...), prompt: str = Form(...), kValue: int = Form(...)):
+
+    try:
+    
+        response = await retriveWithPrompt(projectId, prompt, kValue)
+
+        return JSONResponse(
+            content=response,
+            status_code=status.HTTP_200_OK
+        )
+
+    except HTTPException as http_exc:
+        return JSONResponse(
+            content=http_exc.detail,
+            status_code=http_exc.status_code
+        )
+
+    except Exception as e:
+        print(e)
+
+        return JSONResponse(
+            content=f"Internal server error: {str(e)}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 

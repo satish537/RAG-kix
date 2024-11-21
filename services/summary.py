@@ -10,7 +10,7 @@ from services.extractingResponse import extract_points_from_text
 
 
 CHROMA_PATH = "./chroma/vectorDB"
-ollamaModel = Ollama(model="mistral", keep_alive=-1)
+ollamaModel = Ollama(model="llama3.1", keep_alive=-1)
 
 CORE_PROMPT = """
  
