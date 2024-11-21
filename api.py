@@ -3,6 +3,7 @@ from fastapi import FastAPI, UploadFile, File, Query, HTTPException, Form, statu
 from services.load import load_database
 # from services.retriever import generate_theme_details
 from services.retriever2 import generate_theme_details
+from services.retriever3 import generate_theme_details as generate_theme_details2
 from services.summary import generate_summary
 from services.fileQuery import text_to_query
 from services.chatPrompt import retriveWithPrompt
@@ -164,4 +165,30 @@ async def generate_theme(projectId: str = Form(...), prompt: str = Form(...), kV
         )
 
 
+
+@app.post("/generate-theme-2", tags=["Main"])
+async def generate_theme(projectId: str = Form(...), prompt: str = Form(...), questionId: str = Form(None), participantId: str = Form(None), kValue: int = Form(7)):
+
+    try:
+    
+        response = await generate_theme_details2(projectId, prompt, questionId, participantId, kValue)
+
+        return JSONResponse(
+            content=response,
+            status_code=status.HTTP_200_OK
+        )
+
+    except HTTPException as http_exc:
+        return JSONResponse(
+            content=http_exc.detail,
+            status_code=http_exc.status_code
+        )
+
+    except Exception as e:
+        print(e)
+
+        return JSONResponse(
+            content=f"Internal server error: {str(e)}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
