@@ -32,16 +32,16 @@ CONTEXT:
 """
 
 
-async def generate_summary(id: str):
+async def generate_summary(questionId: str):
 
     if not os.path.exists(CHROMA_PATH):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Project_id '{projectID}' Not Found")
 
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=get_embedding_function())
 
-    results = db.similarity_search_with_score(CORE_PROMPT, k=10, filter={"questionId": id})
+    results = db.similarity_search_with_score(CORE_PROMPT, k=10, filter={"questionId": questionId})
     if not results:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID '{id}' does not have any matching data")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"questionId '{questionId}' does not have any matching data")
 
     context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
     prompt_template = ChatPromptTemplate.from_template(CORE_PROMPT)

@@ -16,7 +16,7 @@ DATA_PATH = "./data"
 CHROMA_PATH = "./chroma/vectorDB"
 
 
-async def load_database(uid, projectId, questionId, participantId, filename, videoType, metadata): 
+async def load_database2(uid, projectId, questionId, participantId, filename, videoType, metadata): 
 
     document_list = await load_documents(DATA_PATH, filename)
     chunk_list = await split_documents(document_list, uid, projectId, questionId, participantId, videoType, metadata)

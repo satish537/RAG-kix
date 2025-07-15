@@ -16,17 +16,18 @@ ollamaModel = Ollama(model="llama3.1", keep_alive=-1)
 CORE_PROMPT = """
  
 PROMPT:
+
 {userPrompt}
- 
+
 =====================================================================================================================================================
- 
+
 TRANSCRIPT:
 {context}
- 
+
 """
 
 
-async def retriveWithPrompt(projectID: str, prompt: str, kValue: int = 2):
+async def retriveWithPrompt(projectID: str, prompt: str, previousResponse, kValue: int = 2):
 
     if not os.path.exists(CHROMA_PATH):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Project_id '{projectID}' Not Found")
