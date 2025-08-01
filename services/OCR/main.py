@@ -78,45 +78,37 @@ def extract_text_by_frame(video_path, frame_interval=FRAME_INTERVAL):
 
 def detect_platform(results):
     """
-    Detect whether the video contains ChatGPT, Claude, or Meta AI conversation
-    
-    Args:
-        results (dict): OCR results from frames
-        
-    Returns:
-        str: 'chatgpt', 'claude', 'meta_ai', or 'unknown'
+    Detect whether the video contains ChatGPT, Claude, Messenger Meta AI, or Meta AI conversation
     """
     chatgpt_indicators = []
     claude_indicators = []
-    meta_ai_indicators = []
-    
+    messenger_meta_ai_indicators = []
+    meta_ai_indicators = []  # <-- NEW
+
     for frame_data in results.values():
         for line in frame_data:
             line_lower = line.lower()
-            
+
             # ChatGPT indicators
-            if "chatgpt" in line_lower:
+            if "chatgpt" in line_lower or "ask anything" in line_lower:
                 chatgpt_indicators.append(line)
-            elif "ask anything" in line_lower:
-                chatgpt_indicators.append(line)
-            
+
             # Claude indicators
-            elif line_lower.startswith("claude"):
+            elif line_lower.startswith("claude") or "reply to claude" in line_lower:
                 claude_indicators.append(line)
-            elif "reply to claude" in line_lower:
-                claude_indicators.append(line)
-            
-            # Meta AI indicators
-            elif "reply to meta ai" in line_lower:
+
+            # Messenger Meta AI indicators
+            elif "meta ai" in line_lower and not "reply to meta ai" in line_lower:
+                messenger_meta_ai_indicators.append(line)
+
+            # Meta AI (Standalone) indicators
+            elif "reply to meta ai" in line_lower:  # <-- NEW
                 meta_ai_indicators.append(line)
-            elif "meta ai" in line_lower:
-                meta_ai_indicators.append(line)
-            elif "ask meta ai" in line_lower:
-                meta_ai_indicators.append(line)
-    
-    # Decide based on frequency
-    if len(meta_ai_indicators) > len(claude_indicators) and len(meta_ai_indicators) > len(chatgpt_indicators):
-        return 'meta_ai'
+
+    if len(meta_ai_indicators) > 0:
+        return 'meta_ai'  # <-- NEW
+    elif len(messenger_meta_ai_indicators) > len(claude_indicators) and len(messenger_meta_ai_indicators) > len(chatgpt_indicators):
+        return 'messenger_meta_ai'
     elif len(claude_indicators) > len(chatgpt_indicators):
         return 'claude'
     elif len(chatgpt_indicators) > 0:
@@ -230,8 +222,8 @@ def extract_claude_conversation_blocks(results):
     
     return all_content
 
-def extract_meta_ai_conversation_blocks(results):
-    """Extract Meta AI conversation blocks from OCR results"""
+def extract_messenger_meta_ai_conversation_blocks(results):
+    """Extract Messenger Meta AI conversation blocks from OCR results"""
     all_content = []
     
     for frame in sorted(results, key=lambda x: int(x)):
@@ -239,38 +231,35 @@ def extract_meta_ai_conversation_blocks(results):
         if not lines:
             continue
         
-        # Check if this frame contains Meta AI indicators
-        has_meta_indicators = False
+        # Check if this frame contains Messenger Meta AI indicators
+        has_messenger_meta_indicators = False
         for line in lines:
             line_lower = line.lower()
-            if "reply to meta ai" in line_lower or "meta ai" in line_lower:
-                has_meta_indicators = True
+            if "meta ai" in line_lower:
+                has_messenger_meta_indicators = True
                 break
         
-        if not has_meta_indicators:
+        if not has_messenger_meta_indicators:
             continue
         
-        # Meta AI has no consistent starting word, so start from beginning
-        start_idx = 0
-        reply_to_meta_idx = -1
-        
-        # Look for "Reply to Meta AI" in last 10 lines
-        for i, line in enumerate(lines[-10:]):
-            line_lower = line.lower()
-            if "reply to meta ai" in line_lower:
-                reply_to_meta_idx = len(lines) - 10 + i
+        # Look for "Meta AI" as start marker (case insensitive)
+        start_idx = -1
+        for i, line in enumerate(lines[:10]):
+            if "meta ai" in line.lower():
+                start_idx = i
                 break
         
-        if reply_to_meta_idx != -1:
+        # Extract content from start marker to end of frame
+        if start_idx != -1:
             frame_content = []
             
-            # Extract content between markers
-            for line in lines[start_idx:reply_to_meta_idx]:
+            # Extract content from after start marker to end of lines
+            for line in lines[start_idx + 1:]:
                 cleaned = clean_ocr_text(line)
                 
                 if cleaned and len(cleaned) > 2:
-                    # Skip Meta AI specific UI elements
-                    if not is_meta_ui_element(cleaned):
+                    # Skip Messenger Meta AI specific UI elements
+                    if not is_messenger_meta_ui_element(cleaned):
                         frame_content.append(cleaned)
             
             if frame_content:
@@ -281,21 +270,54 @@ def extract_meta_ai_conversation_blocks(results):
     
     return all_content
 
-def is_meta_ui_element(text):
-    """Check if text is a Meta AI UI element that should be skipped"""
+def extract_meta_ai_conversation_blocks(results):
+    """Extract Meta AI conversation blocks based on 'Reply to Meta AI' marker"""
+    all_content = []
+
+    for frame in sorted(results, key=lambda x: int(x)):
+        lines = results[frame]
+        if not lines:
+            continue
+
+        reply_idx = -1
+        for i, line in enumerate(lines[-10:]):
+            if "reply to meta ai" in line.lower():
+                reply_idx = len(lines) - 10 + i
+                break
+
+        if reply_idx != -1:
+            frame_content = []
+            for line in lines[:reply_idx]:
+                cleaned = clean_ocr_text(line)
+                if cleaned and len(cleaned) > 2 and cleaned.lower() not in ['search', 'sign up', 'sending', 'more']:
+                    frame_content.append(cleaned)
+
+            if frame_content:
+                all_content.append({
+                    'frame': int(frame),
+                    'content': frame_content
+                })
+
+    return all_content
+
+def is_messenger_meta_ui_element(text):
+    """Check if text is a Messenger Meta AI UI element that should be skipped"""
     text_lower = text.lower()
     
-    # Skip Meta AI specific UI elements
-    meta_ui_elements = [
+    # Skip Messenger Meta AI specific UI elements
+    messenger_meta_ui_elements = [
         'home', 'discover', 'create', 'notifications', 'messages',
         'imagine', 'ask meta ai anything', 'try asking about',
         'what would you like to create', 'recent conversations',
         'regenerate', 'stop generating', 'meta',
         'meta ai can make mistakes', 'try again', 'facebook',
-        'search', 'sign up', 'sending', 'more'
+        'search', 'sign up', 'sending', 'more',
+        'messenger', 'online', 'active', 'typing', 'seen',
+        'delivered', 'sent', 'camera', 'microphone',
+        'call', 'video call', 'info', 'mute', 'block'
     ]
     
-    for element in meta_ui_elements:
+    for element in messenger_meta_ui_elements:
         if element in text_lower:
             return True
     
@@ -368,7 +390,7 @@ def post_process_conversation(lines):
 def extract_unique_chat_content(results, video_path):
     """
     Extract conversation content and return as string
-    Automatically detects whether it's ChatGPT, Claude, or Meta AI
+    Automatically detects whether it's ChatGPT, Claude, or Messenger Meta AI
     
     Args:
         results (dict): OCR results from frames
@@ -386,21 +408,25 @@ def extract_unique_chat_content(results, video_path):
     elif platform == 'claude':
         print(f"🔮 Detected Claude conversation in {os.path.basename(video_path)}")
         content_blocks = extract_claude_conversation_blocks(results)
+    elif platform == 'messenger_meta_ai':
+        print(f"💬 Detected Messenger Meta AI conversation in {os.path.basename(video_path)}")
+        content_blocks = extract_messenger_meta_ai_conversation_blocks(results)
     elif platform == 'meta_ai':
-        print(f"🦾 Detected Meta AI conversation in {os.path.basename(video_path)}")
+        print(f"🧠 Detected Meta AI conversation in {os.path.basename(video_path)}")
         content_blocks = extract_meta_ai_conversation_blocks(results)
+
     else:
         print(f"❓ Could not detect platform type in {os.path.basename(video_path)}, trying all methods")
         # Try all methods and use the one that returns more content
         chatgpt_blocks = extract_chatgpt_conversation_blocks(results)
         claude_blocks = extract_claude_conversation_blocks(results)
-        meta_ai_blocks = extract_meta_ai_conversation_blocks(results)
+        messenger_meta_ai_blocks = extract_messenger_meta_ai_conversation_blocks(results)
         
         # Choose the method with most content
-        if len(meta_ai_blocks) > len(claude_blocks) and len(meta_ai_blocks) > len(chatgpt_blocks):
-            content_blocks = meta_ai_blocks
-            platform = 'meta_ai'
-            print("📝 Using Meta AI extraction method (more content found)")
+        if len(messenger_meta_ai_blocks) > len(claude_blocks) and len(messenger_meta_ai_blocks) > len(chatgpt_blocks):
+            content_blocks = messenger_meta_ai_blocks
+            platform = 'messenger_meta_ai'
+            print("📝 Using Messenger Meta AI extraction method (more content found)")
         elif len(claude_blocks) > len(chatgpt_blocks):
             content_blocks = claude_blocks
             platform = 'claude'
@@ -423,4 +449,3 @@ def extract_unique_chat_content(results, video_path):
     else:
         print("⚠️  No final conversation lines after processing!")
         return ""
-
