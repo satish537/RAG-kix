@@ -79,7 +79,7 @@ async def add_to_db(chunk_list, projectId, DATA_PATH, filename):
         new_chunk_ids = [chunk.metadata["id"] for chunk in newDocumentChunks]
         db.add_documents(newDocumentChunks, ids=new_chunk_ids)
         db.persist()
-        delete_document(DATA_PATH, filename)
+        # delete_document(DATA_PATH, filename)
         return True
     else:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This file has already been uploaded", )

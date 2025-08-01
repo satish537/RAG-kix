@@ -1,4 +1,4 @@
-from services.load2 import load_database2
+from services.load import load_database
 from services.deleteVectors import removeDocumentsUsingQuery
 
 

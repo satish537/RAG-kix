@@ -88,15 +88,15 @@ async def rename_and_save_file(file_obj, document_name: str = None, version_id: 
 
 
 # Delete document/file
-def delete_document(path, filename):
+def delete_document(path: str, filename: str = None):
     try:
-        file_path = os.path.join(path, filename)
+        file_path = os.path.join(path, filename) if filename else path
         if os.path.isfile(file_path):
             os.remove(file_path)
-            # print(f"File {filename} has been deleted successfully.")
+            print(f"File {file_path} has been deleted successfully.")
             return True
         else:
-            print(f"File {filename} does not exist in the directory {path}.")
+            print(f"File {file_path} does not exist.")
             return False
 
     except Exception as e:
